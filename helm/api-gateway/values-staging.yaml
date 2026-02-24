@@ -1,0 +1,58 @@
+# helm/api-gateway/values-staging.yaml
+replicaCount: 1
+
+image:
+  repository: AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecom-microservices/api-gateway
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+  host: staging-api.ecom.example.com
+
+env:
+  PORT: "3000"
+  NODE_ENV: staging
+  USER_SERVICE_URL: http://user-service.ecom-microservices-staging.svc.cluster.local:3001
+  ORDER_SERVICE_URL: http://order-service.ecom-microservices-staging.svc.cluster.local:3002
+  PRODUCT_SERVICE_URL: http://product-service.ecom-microservices-staging.svc.cluster.local:8000
+  ANALYTICS_SERVICE_URL: http://analytics-service.ecom-microservices-staging.svc.cluster.local:8001
+
+secrets:
+  jwtSecretArn: arn:aws:secretsmanager:us-east-2:AWS_ACCOUNT_ID:secret:ecom-microservices/staging/app/jwt-secret
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "300m"
+
+autoscaling:
+  enabled: false
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 5
+  periodSeconds: 10

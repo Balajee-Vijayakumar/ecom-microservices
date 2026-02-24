@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  EcomMicroservices - Developer Account (Account A) Setup
+  Creates IAM role on Account A EC2 to assume role in Account B
+  Run this in Account A (Developer account)
+
+Parameters:
+  ProdAccountId:
+    Type: String
+    Description: AWS Account ID of Account B (Production)
+  ProjectName:
+    Type: String
+    Default: ecom-microservices
+  DeveloperEC2InstanceId:
+    Type: String
+    Description: EC2 Instance ID of developer machine in Account A
+
+Resources:
+
+  # ─── IAM Role for Developer EC2 ───────────────────────────────────────────
+  DeveloperEC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-developer-ec2-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AssumeProductionRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Allow assuming Account B deployment role
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub arn:aws:iam::${ProdAccountId}:role/${ProjectName}-cross-account-deploy-role
+              # Allow git operations (CodeCommit alternative if needed)
+              - Effect: Allow
+                Action:
+                  - codecommit:GitPull
+                  - codecommit:GitPush
+                Resource: '*'
+
+  DeveloperEC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${ProjectName}-developer-ec2-profile
+      Roles:
+        - !Ref DeveloperEC2Role
+
+Outputs:
+  DeveloperEC2RoleArn:
+    Value: !GetAtt DeveloperEC2Role.Arn
+    Description: Attach this role to your Developer EC2 instance
+
+  DeveloperInstanceProfileArn:
+    Value: !GetAtt DeveloperEC2InstanceProfile.Arn
+    Description: Instance Profile ARN to attach to EC2

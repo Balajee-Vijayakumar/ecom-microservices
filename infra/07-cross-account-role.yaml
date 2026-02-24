@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cross-Account Deploy Role for EcomMicroservices
+Parameters:
+  DeveloperAccountId:
+    Type: String
+  ProjectName:
+    Type: String
+    Default: ecom-microservices
+Resources:
+  CrossAccountDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-cross-account-deploy-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${DeveloperAccountId}:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FullDeployPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                  - eks:*
+                  - ssm:*
+                Resource: '*'
+Outputs:
+  CrossAccountRoleArn:
+    Value: !GetAtt CrossAccountDeployRole.Arn

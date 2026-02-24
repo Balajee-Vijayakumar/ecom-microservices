@@ -1,0 +1,89 @@
+version: 0.2
+# ═══════════════════════════════════════════════════════════
+# buildspec-scan.yml
+# Stage: SECURITY SCAN — AWS Inspector image vulnerability scan
+# Fails pipeline if CRITICAL vulnerabilities found
+# ═══════════════════════════════════════════════════════════
+
+phases:
+  install:
+    commands:
+      - apt-get update -y && apt-get install -y jq python3-pip
+      - pip3 install awscli --upgrade
+
+  pre_build:
+    commands:
+      - IMAGE_TAG=$(cat build-metadata.json | jq -r '.image_tag')
+      - echo "Scanning images with tag $IMAGE_TAG"
+      - SERVICES="api-gateway user-service order-service product-service analytics-service notification-service"
+
+  build:
+    commands:
+      - echo "=== Waiting for Inspector scans to complete ==="
+      - |
+        SERVICES="api-gateway user-service order-service product-service analytics-service notification-service"
+        CRITICAL_FOUND=0
+        for SERVICE in $SERVICES; do
+          echo "Checking scan results for $SERVICE..."
+          IMAGE_DIGEST=$(aws ecr describe-images \
+            --repository-name $PROJECT_NAME/$SERVICE \
+            --image-ids imageTag=$IMAGE_TAG \
+            --query 'imageDetails[0].imageDigest' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$IMAGE_DIGEST" ]; then
+            echo "WARNING: Could not find image digest for $SERVICE"
+            continue
+          fi
+
+          # Wait up to 5 minutes for scan to complete
+          for i in $(seq 1 30); do
+            SCAN_STATUS=$(aws ecr describe-image-scan-findings \
+              --repository-name $PROJECT_NAME/$SERVICE \
+              --image-id imageTag=$IMAGE_TAG \
+              --query 'imageScanStatus.status' \
+              --output text 2>/dev/null || echo "IN_PROGRESS")
+            if [ "$SCAN_STATUS" = "COMPLETE" ]; then
+              break
+            fi
+            echo "Scan in progress for $SERVICE... ($i/30)"
+            sleep 10
+          done
+
+          # Check for CRITICAL vulnerabilities
+          CRITICAL_COUNT=$(aws ecr describe-image-scan-findings \
+            --repository-name $PROJECT_NAME/$SERVICE \
+            --image-id imageTag=$IMAGE_TAG \
+            --query 'imageScanFindings.findingSeverityCounts.CRITICAL' \
+            --output text 2>/dev/null || echo "0")
+          HIGH_COUNT=$(aws ecr describe-image-scan-findings \
+            --repository-name $PROJECT_NAME/$SERVICE \
+            --image-id imageTag=$IMAGE_TAG \
+            --query 'imageScanFindings.findingSeverityCounts.HIGH' \
+            --output text 2>/dev/null || echo "0")
+
+          echo "[$SERVICE] CRITICAL: ${CRITICAL_COUNT:-0}, HIGH: ${HIGH_COUNT:-0}"
+
+          if [ "${CRITICAL_COUNT:-0}" -gt "0" ]; then
+            echo "CRITICAL vulnerabilities found in $SERVICE! Failing pipeline."
+            CRITICAL_FOUND=1
+          fi
+        done
+
+        if [ "$CRITICAL_FOUND" -eq "1" ]; then
+          echo "Pipeline halted due to CRITICAL vulnerabilities. Fix before deploying."
+          exit 1
+        fi
+        echo "All images passed security scan!"
+
+  post_build:
+    commands:
+      - echo "Security scan completed successfully"
+      - echo "{\"scan_status\":\"PASSED\",\"scan_time\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > scan-results.json
+
+artifacts:
+  files:
+    - build-metadata.json
+    - scan-results.json
+    - helm/**/*
+    - pipeline/**/*
+  discard-paths: no

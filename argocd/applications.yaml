@@ -1,0 +1,358 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ecom-microservices
+  namespace: argocd
+spec:
+  description: E-Commerce Microservices Project
+  sourceRepos:
+    - 'https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git'
+  destinations:
+    - namespace: ecom-microservices-staging
+      server: https://kubernetes.default.svc
+    - namespace: ecom-microservices-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'networking.k8s.io'
+      kind: Ingress
+  namespaceResourceWhitelist:
+    - group: 'apps'
+      kind: Deployment
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ConfigMap
+    - group: 'autoscaling'
+      kind: HorizontalPodAutoscaler
+  roles:
+    - name: pipeline-deployer
+      policies:
+        - p, proj:ecom-microservices:pipeline-deployer, applications, sync, ecom-microservices/*, allow
+        - p, proj:ecom-microservices:pipeline-deployer, applications, get, ecom-microservices/*, allow
+
+---
+# ─── API Gateway - Staging ────────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-staging-api-gateway
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/api-gateway
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 5
+
+---
+# ─── API Gateway - Prod ───────────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-prod-api-gateway
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/api-gateway
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+
+---
+# ─── User Service - Staging ───────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-staging-user-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/user-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+---
+# ─── User Service - Prod ──────────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-prod-user-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/user-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+---
+# ─── Order Service - Staging ──────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-staging-order-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/order-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# ─── Order Service - Prod ─────────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-prod-order-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/order-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# ─── Product Service - Staging ────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-staging-product-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/product-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# ─── Product Service - Prod ───────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-prod-product-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/product-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# ─── Analytics Service - Staging + Prod ──────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-staging-analytics-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/analytics-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-prod-analytics-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/analytics-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# ─── Notification Service - Staging + Prod ───────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-staging-notification-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/notification-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ecom-microservices-prod-notification-service
+  namespace: argocd
+spec:
+  project: ecom-microservices
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_OWNER/ecom-microservices.git
+    targetRevision: main
+    path: helm/notification-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ecom-microservices-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Supporting Services - ECR, S3, Secrets Manager, SNS
+Parameters:
+  ProjectName:
+    Type: String
+    Default: ecom-microservices
+  Environment:
+    Type: String
+    Default: prod
+  AlertEmail:
+    Type: String
+Resources:
+  ECRApiGateway:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/api-gateway
+      ImageScanningConfiguration:
+        ScanOnPush: true
+  ECRUserService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/user-service
+      ImageScanningConfiguration:
+        ScanOnPush: true
+  ECROrderService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/order-service
+      ImageScanningConfiguration:
+        ScanOnPush: true
+  ECRProductService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/product-service
+      ImageScanningConfiguration:
+        ScanOnPush: true
+  ECRAnalyticsService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/analytics-service
+      ImageScanningConfiguration:
+        ScanOnPush: true
+  ECRNotificationService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/notification-service
+      ImageScanningConfiguration:
+        ScanOnPush: true
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-${Environment}-artifacts-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  SMTPSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ProjectName}/${Environment}/app/smtp
+      Description: SMTP credentials
+      SecretString: '{"host":"smtp.gmail.com","port":"587","user":"","password":""}'
+  RabbitMQSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ProjectName}/${Environment}/app/rabbitmq
+      Description: RabbitMQ connection URL
+      SecretString: '{"url":"amqp://guest:guest@rabbitmq.rabbitmq.svc.cluster.local:5672/"}'
+  SNSAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProjectName}-${Environment}-alerts
+  SNSAlertsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref SNSAlertsTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+  SNSPipelineTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProjectName}-${Environment}-pipeline-events
+  SNSPipelineSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref SNSPipelineTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+  GuardDutyDetector:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: true
+Outputs:
+  ArtifactsBucketName:
+    Value: !Ref ArtifactsBucket
+  SNSAlertsTopicArn:
+    Value: !Ref SNSAlertsTopic
+    Export:
+      Name: !Sub ${ProjectName}-${Environment}-SNSAlertsTopic
+  SNSPipelineTopicArn:
+    Value: !Ref SNSPipelineTopic
+    Export:
+      Name: !Sub ${ProjectName}-${Environment}-SNSPipelineTopic

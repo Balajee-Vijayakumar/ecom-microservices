@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECOM — Premium Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--gold:#c9a84c;--gold-light:#e8c97a;--white:#f5f0e8;--gray:#888;--border:#222}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;font-weight:300}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.5rem 3rem;background:rgba(10,10,10,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;letter-spacing:.15em;color:var(--gold);text-decoration:none}
+.cart-btn{background:var(--gold);color:var(--bg);border:none;padding:.6rem 1.4rem;font-size:.75rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .3s}
+.cart-btn:hover{background:var(--gold-light)}
+.hero{min-height:100vh;display:flex;align-items:center;padding:8rem 3rem 4rem;position:relative}
+.hero::before{content:'';position:absolute;top:0;right:0;width:55%;height:100%;background:radial-gradient(ellipse at 80% 50%,rgba(201,168,76,.08),transparent 70%)}
+.hero-text{max-width:600px;position:relative;z-index:1}
+.eyebrow{font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem}
+.eyebrow::before{content:'';width:40px;height:1px;background:var(--gold)}
+h1{font-family:'Playfair Display',serif;font-size:clamp(3rem,6vw,5rem);font-weight:900;line-height:1.05;margin-bottom:1.5rem}
+h1 em{font-style:italic;color:var(--gold)}
+.hero p{color:var(--gray);font-size:1.05rem;line-height:1.7;margin-bottom:2.5rem;max-width:420px}
+.btn{background:var(--gold);color:var(--bg);padding:.9rem 2.2rem;border:none;font-size:.8rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-block;transition:all .3s}
+.btn:hover{background:var(--gold-light);transform:translateY(-2px)}
+.marquee-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1rem 0;overflow:hidden;background:var(--surface)}
+.marquee{display:flex;gap:4rem;animation:marquee 20s linear infinite;white-space:nowrap}
+.marquee span{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gray);flex-shrink:0}
+.marquee .dot{color:var(--gold)}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.section{padding:5rem 3rem}
+.section-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:3rem}
+.section-title{font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:700}
+.section-title span{color:var(--gold);font-style:italic}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem}
+.product-card{background:var(--surface);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .3s,border-color .3s;position:relative}
+.product-card:hover{transform:translateY(-4px);border-color:var(--gold)}
+.product-img{width:100%;aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative}
+.product-badge{position:absolute;top:1rem;left:1rem;background:var(--gold);color:var(--bg);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;padding:.3rem .7rem;font-weight:500}
+.product-actions{position:absolute;bottom:1rem;right:1rem;opacity:0;transition:opacity .3s}
+.product-card:hover .product-actions{opacity:1}
+.quick-add{background:var(--gold);color:var(--bg);border:none;padding:.5rem 1rem;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-weight:500}
+.product-info{padding:1.2rem}
+.product-category{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.product-name{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.5rem;line-height:1.3}
+.product-footer{display:flex;justify-content:space-between;align-items:center;margin-top:.8rem}
+.product-price{font-size:1.1rem;font-weight:500;color:var(--gold)}
+.product-stock{font-size:.65rem;color:var(--gray);letter-spacing:.1em}
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+.cart-overlay.open{opacity:1;pointer-events:all}
+.cart-sidebar{position:fixed;top:0;right:-420px;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:201;transition:right .4s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.cart-sidebar.open{right:0}
+.cart-header{padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.cart-header h3{font-family:'Playfair Display',serif;font-size:1.3rem}
+.close-btn{background:none;border:none;color:var(--gray);font-size:1.5rem;cursor:pointer}
+.cart-items{flex:1;overflow-y:auto;padding:1.5rem 2rem}
+.cart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1rem;color:var(--gray);font-size:.9rem}
+.cart-item{display:flex;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--border)}
+.cart-item-img{width:64px;height:64px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0}
+.cart-item-info{flex:1}
+.cart-item-name{font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:.3rem}
+.cart-item-price{color:var(--gold);font-size:.9rem}
+.cart-item-controls{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.qty-btn{background:var(--surface2);border:1px solid var(--border);color:var(--white);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.qty{font-size:.85rem;min-width:24px;text-align:center}
+.remove-btn{background:none;border:none;color:var(--gray);cursor:pointer;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;margin-left:auto}
+.cart-footer{padding:1.5rem 2rem;border-top:1px solid var(--border)}
+.cart-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;font-family:'Playfair Display',serif;font-size:1.1rem}
+.cart-total-price{color:var(--gold);font-size:1.3rem}
+.checkout-btn{width:100%;background:var(--gold);color:var(--bg);border:none;padding:1rem;font-size:.8rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;cursor:pointer}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--gold);color:var(--bg);padding:.8rem 1.5rem;font-size:.8rem;letter-spacing:.1em;font-weight:500;z-index:300;transition:transform .4s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.loading{display:flex;align-items:center;justify-content:center;height:200px;gap:.5rem}
+.loading-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:bounce 1s infinite}
+.loading-dot:nth-child(2){animation-delay:.15s}
+.loading-dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-10px);opacity:1}}
+.status-bar{display:flex;align-items:center;gap:.5rem;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gray)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#44ff88;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+footer{background:var(--surface);border-top:1px solid var(--border);padding:3rem;text-align:center;color:var(--gray);font-size:.8rem}
+.categories-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2.5rem}
+.category-card{background:var(--bg);border:1px solid var(--border);padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;cursor:pointer;transition:all .3s;text-decoration:none;color:var(--white)}
+.category-card:hover{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.category-icon{font-size:2.5rem}
+.category-name{font-family:'Playfair Display',serif;font-size:1rem}
+.category-count{font-size:.7rem;color:var(--gray);letter-spacing:.1em}
+</style>
+</head>
+<body>
+<nav>
+  <a href="#" class="logo">ECOM</a>
+  <div style="display:flex;align-items:center;gap:2rem">
+    <div class="status-bar"><div class="status-dot" id="statusDot"></div><span id="statusText">Connecting...</span></div>
+    <button class="cart-btn" onclick="toggleCart()">Cart (<span id="cartCount">0</span>)</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-text">
+    <div class="eyebrow">New Collection 2026</div>
+    <h1>Discover <em>Premium</em> Products</h1>
+    <p>Curated selection of the finest products, delivered with exceptional service to your door.</p>
+    <a href="#products" class="btn">Shop Now</a>
+  </div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee">
+    <span>Free Shipping</span><span class="dot">✦</span><span>Premium Quality</span><span class="dot">✦</span><span>Secure Checkout</span><span class="dot">✦</span><span>24/7 Support</span><span class="dot">✦</span><span>Easy Returns</span><span class="dot">✦</span><span>Free Shipping</span><span class="dot">✦</span><span>Premium Quality</span><span class="dot">✦</span><span>Secure Checkout</span><span class="dot">✦</span><span>24/7 Support</span><span class="dot">✦</span><span>Easy Returns</span><span class="dot">✦</span>
+  </div>
+</div>
+
+<section class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-header"><h2 class="section-title">Shop by <span>Category</span></h2></div>
+  <div class="categories-grid">
+    <a href="#" class="category-card"><div class="category-icon">💻</div><div class="category-name">Electronics</div><div class="category-count">85+ items</div></a>
+    <a href="#" class="category-card"><div class="category-icon">👗</div><div class="category-name">Fashion</div><div class="category-count">120+ items</div></a>
+    <a href="#" class="category-card"><div class="category-icon">🏠</div><div class="category-name">Home &amp; Living</div><div class="category-count">200+ items</div></a>
+    <a href="#" class="category-card"><div class="category-icon">⚽</div><div class="category-name">Sports</div><div class="category-count">60+ items</div></a>
+  </div>
+</section>
+
+<section class="section" id="products">
+  <div class="section-header"><h2 class="section-title">Featured <span>Products</span></h2></div>
+  <div id="productsGrid" class="products-grid">
+    <div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
+  </div>
+</section>
+
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header"><h3>Your Cart</h3><button class="close-btn" onclick="toggleCart()">×</button></div>
+  <div class="cart-items" id="cartItems"><div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div></div>
+  <div class="cart-footer">
+    <div class="cart-total"><span>Total</span><span class="cart-total-price">$<span id="cartTotal">0.00</span></span></div>
+    <button class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<footer>© 2026 ECOM. All rights reserved. Powered by AWS EKS Microservices.</footer>
+
+<script>
+// API URL - will be auto-detected from same host or use window.API_URL if set
+const API = window.API_URL || '';
+let cart = JSON.parse(localStorage.getItem('ecom_cart') || '[]');
+const emojis = {'electronics':'💻','fashion':'👗','clothing':'👕','home':'🏠','sports':'⚽','books':'📚','beauty':'💄','jewelry':'💎','default':'📦'};
+function getEmoji(c){if(!c)return emojis.default;const k=c.toLowerCase();for(const[key,v]of Object.entries(emojis))if(k.includes(key))return v;return emojis.default;}
+
+async function checkHealth(){
+  try{
+    const r = await fetch(API+'/health', {signal:AbortSignal.timeout(5000)});
+    if(r.ok){document.getElementById('statusDot').style.background='#44ff88';document.getElementById('statusText').textContent='API Live';}
+    else throw 0;
+  }catch{document.getElementById('statusDot').style.background='#ff4444';document.getElementById('statusText').textContent='API Offline';}
+}
+
+const DEMOS = [
+  {id:1,name:'Premium Wireless Headphones',category:'Electronics',price:299.99,stock_quantity:45,emoji:'🎧'},
+  {id:2,name:'Leather Weekend Bag',category:'Fashion',price:189.00,stock_quantity:12,emoji:'👜'},
+  {id:3,name:'Smart Home Hub',category:'Electronics',price:129.99,stock_quantity:8,emoji:'🏠'},
+  {id:4,name:'Running Shoes Pro',category:'Sports',price:159.99,stock_quantity:34,emoji:'👟'},
+  {id:5,name:'Silk Scarf Collection',category:'Fashion',price:89.00,stock_quantity:3,emoji:'🧣'},
+  {id:6,name:'Yoga Mat Premium',category:'Sports',price:79.99,stock_quantity:27,emoji:'🧘'},
+  {id:7,name:'Coffee Maker Deluxe',category:'Home',price:249.00,stock_quantity:15,emoji:'☕'},
+  {id:8,name:'Mechanical Keyboard',category:'Electronics',price:199.99,stock_quantity:22,emoji:'⌨️'},
+];
+
+async function loadProducts(){
+  const grid = document.getElementById('productsGrid');
+  try{
+    const r = await fetch(API+'/api/products?limit=8', {signal:AbortSignal.timeout(6000)});
+    if(!r.ok) throw 0;
+    const p = await r.json();
+    if(p.length){grid.innerHTML=p.map(renderCard).join('');return;}
+  }catch{}
+  grid.innerHTML = DEMOS.map(renderCard).join('');
+}
+
+function renderCard(p){
+  const e = p.emoji || getEmoji(p.category);
+  const badge = p.stock_quantity < 10 ? '<div class="product-badge">Low Stock</div>' : '';
+  return `<div class="product-card">
+    <div class="product-img">${e}${badge}
+      <div class="product-actions"><button class="quick-add" onclick='addToCart(${JSON.stringify({...p,emoji:e}).replace(/'/g,"&#39;")})'>+ Add to Cart</button></div>
+    </div>
+    <div class="product-info">
+      <div class="product-category">${p.category||'General'}</div>
+      <div class="product-name">${p.name}</div>
+      <div class="product-footer">
+        <div class="product-price">$${parseFloat(p.price).toFixed(2)}</div>
+        <div class="product-stock">${p.stock_quantity} in stock</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCart(){document.getElementById('cartOverlay').classList.toggle('open');document.getElementById('cartSidebar').classList.toggle('open');}
+function addToCart(p){const e=cart.find(i=>i.id===p.id);if(e)e.qty++;else cart.push({...p,qty:1});saveCart();updateCartUI();showToast(p.name+' added to cart!');}
+function removeFromCart(id){cart=cart.filter(i=>i.id!==id);saveCart();updateCartUI();}
+function updateQty(id,d){const i=cart.find(x=>x.id===id);if(!i)return;i.qty+=d;if(i.qty<=0)removeFromCart(id);else{saveCart();updateCartUI();}}
+function saveCart(){localStorage.setItem('ecom_cart',JSON.stringify(cart));}
+function updateCartUI(){
+  const count=cart.reduce((s,i)=>s+i.qty,0);
+  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  document.getElementById('cartCount').textContent=count;
+  document.getElementById('cartTotal').textContent=total.toFixed(2);
+  const el=document.getElementById('cartItems');
+  if(!cart.length){el.innerHTML='<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>';return;}
+  el.innerHTML=cart.map(i=>`<div class="cart-item">
+    <div class="cart-item-img">${i.emoji||getEmoji(i.category)}</div>
+    <div class="cart-item-info">
+      <div class="cart-item-name">${i.name}</div>
+      <div class="cart-item-price">$${(i.price*i.qty).toFixed(2)}</div>
+      <div class="cart-item-controls">
+        <button class="qty-btn" onclick="updateQty(${i.id},-1)">−</button>
+        <span class="qty">${i.qty}</span>
+        <button class="qty-btn" onclick="updateQty(${i.id},1)">+</button>
+        <button class="remove-btn" onclick="removeFromCart(${i.id})">Remove</button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+function checkout(){if(!cart.length){showToast('Cart is empty!');return;}showToast('Order placed! Thank you!');cart=[];saveCart();updateCartUI();setTimeout(toggleCart,1500);}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+checkHealth();loadProducts();updateCartUI();
+</script>
+</body>
+</html>

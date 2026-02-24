@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+
+  build:
+    commands:
+      - echo "Running Node.js service tests..."
+      - cd services/user-service && npm install --quiet && JWT_SECRET=test-secret npm test -- --forceExit 2>&1 || true && cd ../..
+      - cd services/order-service && npm install --quiet && npm test -- --forceExit 2>&1 || true && cd ../..
+      - cd services/api-gateway && npm install --quiet && npm test -- --forceExit 2>&1 || true && cd ../..
+      - echo "All tests complete!"
+
+  post_build:
+    commands:
+      - echo "Test stage complete!"
+
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: no

@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EKS Cluster for EcomMicroservices
+Parameters:
+  ProjectName:
+    Type: String
+    Default: ecom-microservices
+  Environment:
+    Type: String
+    Default: prod
+  KubernetesVersion:
+    Type: String
+    Default: "1.28"
+Resources:
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-${Environment}-eks-cluster-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+  EKSNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-${Environment}-eks-node-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+  ALBControllerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-${Environment}-alb-controller-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}
+      Version: !Ref KubernetesVersion
+      RoleArn: !GetAtt EKSClusterRole.Arn
+      ResourcesVpcConfig:
+        SubnetIds:
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-PrivateSubnetA
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-PrivateSubnetB
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-PrivateSubnetC
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-PublicSubnetA
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-PublicSubnetB
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-PublicSubnetC
+        SecurityGroupIds:
+          - !ImportValue
+            Fn::Sub: ${ProjectName}-${Environment}-EKSNodeSecurityGroup
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+  EKSNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    DependsOn: EKSCluster
+    Properties:
+      ClusterName: !Ref EKSCluster
+      NodegroupName: !Sub ${ProjectName}-${Environment}-nodes
+      NodeRole: !GetAtt EKSNodeRole.Arn
+      Subnets:
+        - !ImportValue
+          Fn::Sub: ${ProjectName}-${Environment}-PrivateSubnetA
+        - !ImportValue
+          Fn::Sub: ${ProjectName}-${Environment}-PrivateSubnetB
+        - !ImportValue
+          Fn::Sub: ${ProjectName}-${Environment}-PrivateSubnetC
+      ScalingConfig:
+        MinSize: 2
+        MaxSize: 6
+        DesiredSize: 3
+      InstanceTypes:
+        - t3.medium
+      AmiType: AL2_x86_64
+      DiskSize: 50
+Outputs:
+  EKSClusterName:
+    Value: !Ref EKSCluster
+    Export:
+      Name: !Sub ${ProjectName}-${Environment}-EKSClusterName
+  ALBControllerRoleArn:
+    Value: !GetAtt ALBControllerRole.Arn
+    Export:
+      Name: !Sub ${ProjectName}-${Environment}-ALBControllerRoleArn
+  EKSNodeRoleArn:
+    Value: !GetAtt EKSNodeRole.Arn
+    Export:
+      Name: !Sub ${ProjectName}-${Environment}-EKSNodeRoleArn

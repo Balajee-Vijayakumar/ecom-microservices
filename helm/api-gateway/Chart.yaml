@@ -1,0 +1,7 @@
+# helm/api-gateway/Chart.yaml
+apiVersion: v2
+name: api-gateway
+description: API Gateway Helm Chart
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

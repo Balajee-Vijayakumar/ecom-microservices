@@ -1,0 +1,33 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-8)
+      - echo "Building image tag $IMAGE_TAG"
+
+  build:
+    commands:
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/api-gateway:$IMAGE_TAG services/api-gateway/
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/api-gateway:$IMAGE_TAG
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/user-service:$IMAGE_TAG services/user-service/
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/user-service:$IMAGE_TAG
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/order-service:$IMAGE_TAG services/order-service/
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/order-service:$IMAGE_TAG
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/product-service:$IMAGE_TAG services/product-service/
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/product-service:$IMAGE_TAG
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/analytics-service:$IMAGE_TAG services/analytics-service/
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/analytics-service:$IMAGE_TAG
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/notification-service:$IMAGE_TAG services/notification-service/
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/notification-service:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo "{\"image_tag\":\"$IMAGE_TAG\"}" > build-metadata.json
+      - echo "Build complete! Image tag $IMAGE_TAG"
+
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: no

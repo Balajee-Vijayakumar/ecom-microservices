@@ -1,0 +1,230 @@
+version: '3.9'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Local Development docker-compose
+# Runs all 6 microservices + PostgreSQL + RabbitMQ locally
+# Usage: docker-compose up --build
+# ═══════════════════════════════════════════════════════════════════════════════
+
+x-common-env: &common-env
+  NODE_ENV: local
+  APP_ENV: local
+
+x-python-healthcheck: &python-healthcheck
+  interval: 30s
+  timeout: 5s
+  retries: 5
+  start_period: 15s
+
+x-node-healthcheck: &node-healthcheck
+  interval: 30s
+  timeout: 5s
+  retries: 5
+  start_period: 15s
+
+services:
+
+  # ─── Infrastructure ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecom-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: ecom-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI: http://localhost:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ecom-network
+
+  # ─── Node.js Services ────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: ecom-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *common-env
+      PORT: "3000"
+      JWT_SECRET: local-dev-secret-32-chars-minimum
+      USER_SERVICE_URL: http://user-service:3001
+      ORDER_SERVICE_URL: http://order-service:3002
+      PRODUCT_SERVICE_URL: http://product-service:8000
+      ANALYTICS_SERVICE_URL: http://analytics-service:8001
+      NOTIFICATION_SERVICE_URL: http://notification-service:8002
+    depends_on:
+      user-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      <<: *node-healthcheck
+    networks:
+      - ecom-network
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: ecom-user-service
+    ports:
+      - "3001:3001"
+    environment:
+      <<: *common-env
+      PORT: "3001"
+      JWT_SECRET: local-dev-secret-32-chars-minimum
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: usersdb
+      DB_USER: postgres
+      DB_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      <<: *node-healthcheck
+    networks:
+      - ecom-network
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: ecom-order-service
+    ports:
+      - "3002:3002"
+    environment:
+      <<: *common-env
+      PORT: "3002"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ordersdb
+      DB_USER: postgres
+      DB_PASSWORD: password
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      PRODUCT_SERVICE_URL: http://product-service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      <<: *node-healthcheck
+    networks:
+      - ecom-network
+    restart: unless-stopped
+
+  # ─── Python Services ──────────────────────────────────────────────────────────
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: ecom-product-service
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: productsdb
+      DB_USER: postgres
+      DB_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+      <<: *python-healthcheck
+    networks:
+      - ecom-network
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    container_name: ecom-analytics-service
+    ports:
+      - "8001:8001"
+    environment:
+      APP_ENV: local
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: analyticsdb
+      DB_USER: postgres
+      DB_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8001/health"]
+      <<: *python-healthcheck
+    networks:
+      - ecom-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: ecom-notification-service
+    ports:
+      - "8002:8002"
+    environment:
+      APP_ENV: local
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      USER_SERVICE_URL: http://user-service:3001
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "587"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8002/health"]
+      <<: *python-healthcheck
+    networks:
+      - ecom-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  ecom-network:
+    driver: bridge

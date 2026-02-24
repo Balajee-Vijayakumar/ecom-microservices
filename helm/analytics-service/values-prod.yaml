@@ -1,0 +1,43 @@
+replicaCount: 3
+image:
+  repository: AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecom-microservices/analytics-service
+  tag: "latest"
+  pullPolicy: Always
+service:
+  type: ClusterIP
+  port: 8001
+  targetPort: 8001
+ingress:
+  enabled: false
+env:
+  PROJECT_NAME: ecom-microservices
+  ENVIRONMENT: prod
+  AWS_REGION: us-east-2
+  APP_ENV: prod
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8001
+  initialDelaySeconds: 40
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8001
+  initialDelaySeconds: 20
+  periodSeconds: 15
+  timeoutSeconds: 10
+  failureThreshold: 5

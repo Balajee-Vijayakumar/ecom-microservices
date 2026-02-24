@@ -1,0 +1,41 @@
+replicaCount: 1
+image:
+  repository: AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecom-microservices/order-service
+  tag: "latest"
+  pullPolicy: Always
+service:
+  type: ClusterIP
+  port: 3002
+  targetPort: 3002
+ingress:
+  enabled: false
+env:
+  PORT: "3002"
+  NODE_ENV: staging
+  PROJECT_NAME: ecom-microservices
+  ENVIRONMENT: staging
+  AWS_REGION: us-east-2
+  PRODUCT_SERVICE_URL: http://product-service.ecom-microservices-staging.svc.cluster.local:8000
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "300m"
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3002
+  initialDelaySeconds: 20
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3002
+  initialDelaySeconds: 10
+  periodSeconds: 10

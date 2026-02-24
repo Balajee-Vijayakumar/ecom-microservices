@@ -1,0 +1,41 @@
+# helm/user-service/values-staging.yaml
+replicaCount: 1
+image:
+  repository: AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecom-microservices/user-service
+  tag: "latest"
+  pullPolicy: Always
+service:
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+ingress:
+  enabled: false
+env:
+  PORT: "3001"
+  NODE_ENV: staging
+  PROJECT_NAME: ecom-microservices
+  ENVIRONMENT: staging
+  AWS_REGION: us-east-2
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "300m"
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3001
+  initialDelaySeconds: 20
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3001
+  initialDelaySeconds: 10
+  periodSeconds: 10

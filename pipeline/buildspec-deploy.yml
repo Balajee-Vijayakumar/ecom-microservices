@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl && mv kubectl /usr/local/bin/
+      - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+  pre_build:
+    commands:
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+      - IMAGE_TAG=$(python3 -c "import json; print(json.load(open('build-metadata.json'))['image_tag'])")
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - echo "Deploying image tag $IMAGE_TAG to $ENVIRONMENT"
+      - kubectl create namespace ecom-microservices-$ENVIRONMENT --dry-run=client -o yaml | kubectl apply -f -
+
+  build:
+    commands:
+      - helm upgrade --install api-gateway helm/api-gateway -f helm/api-gateway/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --set image.tag=$IMAGE_TAG --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/api-gateway --wait --timeout 5m || true
+      - helm upgrade --install user-service helm/user-service -f helm/user-service/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --set image.tag=$IMAGE_TAG --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/user-service --wait --timeout 5m || true
+      - helm upgrade --install order-service helm/order-service -f helm/order-service/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --set image.tag=$IMAGE_TAG --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/order-service --wait --timeout 5m || true
+      - helm upgrade --install product-service helm/product-service -f helm/product-service/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --set image.tag=$IMAGE_TAG --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/product-service --wait --timeout 5m || true
+      - helm upgrade --install analytics-service helm/analytics-service -f helm/analytics-service/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --set image.tag=$IMAGE_TAG --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/analytics-service --wait --timeout 5m || true
+      - helm upgrade --install notification-service helm/notification-service -f helm/notification-service/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --set image.tag=$IMAGE_TAG --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecom-microservices/notification-service --wait --timeout 5m || true
+      - kubectl create configmap frontend-html --from-file=index.html=frontend/index.html -n ecom-microservices-$ENVIRONMENT --dry-run=client -o yaml | kubectl apply -f -
+      - helm upgrade --install frontend helm/frontend -f helm/frontend/values-$ENVIRONMENT.yaml --namespace ecom-microservices-$ENVIRONMENT --wait --timeout 5m || true
+
+  post_build:
+    commands:
+      - echo "Deployment to $ENVIRONMENT complete!"
+      - kubectl get pods -n ecom-microservices-$ENVIRONMENT
+      - echo "Frontend URL:" && kubectl get svc frontend -n ecom-microservices-$ENVIRONMENT -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' || true
+
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: no

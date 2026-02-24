@@ -1,0 +1,33 @@
+{
+  "name": "user-service",
+  "version": "1.0.0",
+  "description": "User management microservice",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev":   "nodemon src/app.js",
+    "test":  "jest --forceExit --coverage",
+    "lint":  "eslint src/ tests/"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.450.0",
+    "@aws-sdk/client-ssm":             "^3.450.0",
+    "bcryptjs":   "^2.4.3",
+    "express":    "^4.18.2",
+    "helmet":     "^7.1.0",
+    "joi":        "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan":     "^1.10.0",
+    "pg":         "^8.11.3"
+  },
+  "devDependencies": {
+    "jest":      "^29.7.0",
+    "nodemon":   "^3.0.2",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": ["src/**/*.js"]
+  }
+}
