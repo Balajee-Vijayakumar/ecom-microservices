@@ -1,0 +1,16 @@
+apiVersion: v1
+data:
+  mapRoles: |
+    - rolearn: arn:aws:iam::451124812411:role/ecom-microservices-prod-eks-node-role
+      groups:
+      - system:bootstrappers
+      - system:nodes
+      username: system:node:{{EC2PrivateDNSName}}
+    - rolearn: arn:aws:iam::451124812411:role/ecom-microservices-prod-codebuild-role
+      username: codebuild-deploy
+      groups:
+      - system:masters
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
