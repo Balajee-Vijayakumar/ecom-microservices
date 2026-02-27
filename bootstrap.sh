@@ -93,6 +93,29 @@ cfn_output() {
     --output text
 }
 
+# Read subnet lists from the actual stack output keys
+read_vpc_outputs() {
+  VPC_ID=$(cfn_output VpcId)
+
+  # Try new key names first, fall back to old key names
+  SUBNET_A=$(cfn_output PrivSubnetA)
+  if [[ -z "$SUBNET_A" || "$SUBNET_A" == "None" ]]; then
+    # Old stack format — subnets are comma-separated in one output
+    PRIVATE_SUBNETS_RAW=$(cfn_output PrivateSubnets)
+    SUBNET_A=$(echo "$PRIVATE_SUBNETS_RAW" | cut -d',' -f1)
+    SUBNET_B=$(echo "$PRIVATE_SUBNETS_RAW" | cut -d',' -f2)
+    SUBNET_C=$(echo "$PRIVATE_SUBNETS_RAW" | cut -d',' -f3)
+    RDS_SUBNETS_RAW=$(cfn_output RDSSubnets)
+    RDS_SUBNET_A=$(echo "$RDS_SUBNETS_RAW" | cut -d',' -f1)
+    RDS_SUBNET_B=$(echo "$RDS_SUBNETS_RAW" | cut -d',' -f2)
+  else
+    SUBNET_B=$(cfn_output PrivSubnetB)
+    SUBNET_C=$(cfn_output PrivSubnetC)
+    RDS_SUBNET_A=$(cfn_output RdsSubnetA)
+    RDS_SUBNET_B=$(cfn_output RdsSubnetB)
+  fi
+}
+
 create_role_if_missing() {
   local ROLE=$1 PRINCIPAL=$2; shift 2
   if ! aws iam get-role --role-name "$ROLE" &>/dev/null; then
@@ -315,16 +338,29 @@ else
   log "VPC stack exists (status: $VPC_STATUS) — reading outputs"
 fi
 
-# Read subnet IDs directly from CloudFormation outputs (100% reliable)
+# Read subnet IDs from CloudFormation outputs
+# Handles both old key format (PrivateSubnets comma-list) and new (PrivSubnetA/B/C)
 VPC_ID=$(cfn_output VpcId)
-SUBNET_A=$(cfn_output PrivSubnetA)
-SUBNET_B=$(cfn_output PrivSubnetB)
-SUBNET_C=$(cfn_output PrivSubnetC)
-RDS_SUBNET_A=$(cfn_output RdsSubnetA)
-RDS_SUBNET_B=$(cfn_output RdsSubnetB)
 
-[[ -z "$VPC_ID" || "$VPC_ID" == "None" ]]    && error "Could not get VPC ID from stack outputs"
-[[ -z "$SUBNET_A" || "$SUBNET_A" == "None" ]] && error "Could not get Subnet A from stack outputs"
+SUBNET_A=$(cfn_output PrivSubnetA)
+if [[ -z "$SUBNET_A" || "$SUBNET_A" == "None" ]]; then
+  log "Detected old VPC stack format — reading comma-separated subnet outputs"
+  PRIVATE_RAW=$(cfn_output PrivateSubnets)
+  SUBNET_A=$(echo "$PRIVATE_RAW" | cut -d',' -f1 | tr -d ' ')
+  SUBNET_B=$(echo "$PRIVATE_RAW" | cut -d',' -f2 | tr -d ' ')
+  SUBNET_C=$(echo "$PRIVATE_RAW" | cut -d',' -f3 | tr -d ' ')
+  RDS_RAW=$(cfn_output RDSSubnets)
+  RDS_SUBNET_A=$(echo "$RDS_RAW" | cut -d',' -f1 | tr -d ' ')
+  RDS_SUBNET_B=$(echo "$RDS_RAW" | cut -d',' -f2 | tr -d ' ')
+else
+  SUBNET_B=$(cfn_output PrivSubnetB)
+  SUBNET_C=$(cfn_output PrivSubnetC)
+  RDS_SUBNET_A=$(cfn_output RdsSubnetA)
+  RDS_SUBNET_B=$(cfn_output RdsSubnetB)
+fi
+
+[[ -z "$VPC_ID"   || "$VPC_ID"   == "None" ]] && error "Could not get VPC ID from stack outputs"
+[[ -z "$SUBNET_A" || "$SUBNET_A" == "None" ]] && error "Could not get private subnets from stack outputs"
 
 log "VPC: $VPC_ID"
 log "Private subnets: $SUBNET_A | $SUBNET_B | $SUBNET_C"
