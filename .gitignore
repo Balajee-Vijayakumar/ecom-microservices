@@ -1,0 +1,9 @@
+# Never commit these
+*.env
+.env*
+secrets/
+*.pem
+*.key
+
+# Temp build files
+/tmp/
