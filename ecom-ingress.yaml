@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecom-ingress
+  namespace: ecom-microservices-prod
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80

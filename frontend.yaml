@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled":"true","service.beta.kubernetes.io/aws-load-balancer-internal":"false","service.beta.kubernetes.io/aws-load-balancer-type":"classic"},"name":"frontend","namespace":"ecom-microservices-prod"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"frontend"},"type":"LoadBalancer"}}
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
+    service.beta.kubernetes.io/aws-load-balancer-type: classic
+  creationTimestamp: "2026-02-24T18:21:43Z"
+  finalizers:
+  - service.k8s.aws/resources
+  name: frontend
+  namespace: ecom-microservices-prod
+  resourceVersion: "319378"
+  uid: 3b0deaf1-0720-42bd-935f-12fd664bc26e
+spec:
+  clusterIP: 172.20.179.63
+  clusterIPs:
+  - 172.20.179.63
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: frontend
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

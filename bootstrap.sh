@@ -124,10 +124,10 @@ create_role_if_missing() {
       --assume-role-policy-document \
       "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"${PRINCIPAL}\"},\"Action\":\"sts:AssumeRole\"}]}" \
       --output text > /dev/null
-    for POLICY in "$@"; do
-      aws iam attach-role-policy --role-name "$ROLE" --policy-arn "$POLICY"
-    done
-    ok "Role created: $ROLE"
+    aws iam put-role-policy --role-name "$ROLE" \
+      --policy-name "${ROLE}-inline" \
+      --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"*\",\"Resource\":\"*\"}]}" \
+      --output text > /dev/null && ok "Role created: $ROLE" || warn "Could not set inline policy for $ROLE"
   else
     log "Role exists: $ROLE"
   fi
