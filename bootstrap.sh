@@ -859,7 +859,7 @@ data:
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>NEXUS STORE — Premium Electronics</title>
+    <title>NEXUS STORE — Premium Electronicss</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
     <style>
     :root{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--card:#14141e;--border:rgba(255,255,255,0.07);--accent:#6366f1;--accent2:#a855f7;--accent3:#22d3ee;--text:#f0f0f8;--muted:#6b7280;--green:#10b981;--red:#ef4444;--yellow:#f59e0b}
