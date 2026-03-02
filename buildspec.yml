@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+      - echo ECR login successful
+
+  build:
+    commands:
+      - echo Building Docker images...
+      - bash scripts/build-and-push.sh
+
+  post_build:
+    commands:
+      - echo Build and push complete
+      - echo Updating kubeconfig...
+      - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_DEFAULT_REGION
+      - echo Deploying to EKS...
+      - kubectl apply -f k8s/prod/ -n ecom-microservices-prod
+      - echo Deployment complete
+
