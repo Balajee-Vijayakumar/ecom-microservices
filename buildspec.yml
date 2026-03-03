@@ -3,21 +3,23 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo "================ DEBUG START ================"
+      - echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+      - echo "ECR_REGISTRY=$ECR_REGISTRY"
+      - echo "Getting caller identity..."
+      - aws sts get-caller-identity
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - echo "ACCOUNT_ID=$ACCOUNT_ID"
+      - ECR_REGISTRY=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo "Final Registry=$ECR_REGISTRY"
+      - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-      - echo ECR login successful
+      - echo "================ DEBUG END =================="
 
   build:
     commands:
-      - echo Building Docker images...
-      - bash scripts/build-and-push.sh
+      - echo "Build phase placeholder"
 
   post_build:
     commands:
-      - echo Build and push complete
-      - echo Updating kubeconfig...
-      - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_DEFAULT_REGION
-      - echo Deploying to EKS...
-      - kubectl apply -f k8s/prod/ -n ecom-microservices-prod
-      - echo Deployment complete
-
+      - echo "Post build phase placeholder"
