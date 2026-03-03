@@ -1023,7 +1023,7 @@ data:
     <div class="page active" id="page-home">
       <div class="hero">
         <div class="badge"><span class="dot"></span> New arrivals every week</div>
-        <h1>The future of <em>premium</em> electronics</h1>
+        <h1>The future of <em>premium</em> electronics & Gadgets</h1>
         <p>Curated tech for the discerning buyer. Find gear that elevates your life.</p>
         <div class="cta">
           <button class="btn-p" onclick="sP('shop')">Explore Products</button>
