@@ -13,9 +13,9 @@ phases:
       - echo "================ TEST STAGE START ================"
 
       - echo "--- Node.js syntax checks ---"
-      - node --check services/api-gateway/server.js && echo "PASS api-gateway" || (echo "FAIL api-gateway" && exit 1)
-      - node --check services/user-service/server.js && echo "PASS user-service" || (echo "FAIL user-service" && exit 1)
-      - node --check services/order-service/server.js && echo "PASS order-service" || (echo "FAIL order-service" && exit 1)
+      - node --check services/api-gateway/src/app.js && echo "PASS api-gateway" || (echo "FAIL api-gateway" && exit 1)
+      - node --check services/user-service/src/app.js && echo "PASS user-service" || (echo "FAIL user-service" && exit 1)
+      - node --check services/order-service/src/app.js && echo "PASS order-service" || (echo "FAIL order-service" && exit 1)
 
       - echo "--- Python syntax checks ---"
       - python3 -m py_compile services/product-service/main.py && echo "PASS product-service" || (echo "FAIL product-service" && exit 1)
@@ -29,7 +29,7 @@ phases:
       - test -f frontend/public/index.html && echo "PASS frontend exists" || (echo "FAIL frontend missing" && exit 1)
 
       - echo "--- Dockerfile checks ---"
-      - for svc in api-gateway user-service order-service product-service analytics-service notification-service; do test -f services/$svc/Dockerfile && echo "PASS $svc Dockerfile" || echo "WARN $svc Dockerfile missing"; done
+      - for svc in api-gateway user-service order-service product-service analytics-service notification-service; do test -f services/$svc/Dockerfile && echo "PASS $svc Dockerfile" || (echo "FAIL $svc Dockerfile missing" && exit 1); done
 
       - echo "================ ALL TESTS PASSED ================"
 
