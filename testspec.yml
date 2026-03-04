@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing dependencies..."
+      - cd services/api-gateway && npm install --silent 2>/dev/null || true && cd ../..
+      - cd services/user-service && npm install --silent 2>/dev/null || true && cd ../..
+      - cd services/order-service && npm install --silent 2>/dev/null || true && cd ../..
+
+  build:
+    commands:
+      - echo "================ TEST STAGE START ================"
+
+      - echo "--- Node.js syntax checks ---"
+      - node --check services/api-gateway/server.js && echo "PASS api-gateway" || (echo "FAIL api-gateway" && exit 1)
+      - node --check services/user-service/server.js && echo "PASS user-service" || (echo "FAIL user-service" && exit 1)
+      - node --check services/order-service/server.js && echo "PASS order-service" || (echo "FAIL order-service" && exit 1)
+
+      - echo "--- Python syntax checks ---"
+      - python3 -m py_compile services/product-service/main.py && echo "PASS product-service" || (echo "FAIL product-service" && exit 1)
+      - python3 -m py_compile services/analytics-service/main.py && echo "PASS analytics-service" || (echo "FAIL analytics-service" && exit 1)
+      - python3 -m py_compile services/notification-service/main.py && echo "PASS notification-service" || (echo "FAIL notification-service" && exit 1)
+
+      - echo "--- File structure checks ---"
+      - test -f buildspec.yml && echo "PASS buildspec.yml exists" || (echo "FAIL buildspec.yml missing" && exit 1)
+      - test -f testspec.yml && echo "PASS testspec.yml exists" || (echo "FAIL testspec.yml missing" && exit 1)
+      - test -f k8s/prod/all-resources.yaml && echo "PASS k8s manifests exist" || (echo "FAIL k8s manifests missing" && exit 1)
+      - test -f frontend/public/index.html && echo "PASS frontend exists" || (echo "FAIL frontend missing" && exit 1)
+
+      - echo "--- Dockerfile checks ---"
+      - for svc in api-gateway user-service order-service product-service analytics-service notification-service; do test -f services/$svc/Dockerfile && echo "PASS $svc Dockerfile" || echo "WARN $svc Dockerfile missing"; done
+
+      - echo "================ ALL TESTS PASSED ================"
+
+  post_build:
+    commands:
+      - echo "Test stage complete - proceeding to Build"
