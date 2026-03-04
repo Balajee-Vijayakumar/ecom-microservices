@@ -1033,7 +1033,7 @@ items:
       \ In</button>\n    </div>\n  </div>\n</nav>\n\n<!-- HOME PAGE -->\n<div class=\"\
       page active\" id=\"page-home\">\n  <div class=\"hero\">\n    <div class=\"hero-badge\"\
       ><span></span> New arrivals every week</div>\n    <h1>The future of <em>premium</em>\
-      \ electronics</h1>\n    <p>Curated tech for the discerning buyer. From audio\
+      \ electronics and gadgets</h1>\n    <p>Curated tech for the discerning buyer. From audio\
       \ to productivity, find gear that elevates your life.</p>\n    <div class=\"\
       hero-cta\">\n      <button class=\"btn-primary\" onclick=\"showPage('shop')\"\
       >Explore Products</button>\n      <button class=\"btn-secondary\" onclick=\"\
@@ -1398,7 +1398,7 @@ items:
       aa\"><button class=\"login-btn\" onclick=\"oM()\">Sign In</button></div>\n \
       \ </div>\n</nav>\n<div class=\"page active\" id=\"page-home\">\n  <div class=\"\
       hero\">\n    <div class=\"badge\"><span class=\"dot\"></span> New arrivals every\
-      \ week</div>\n    <h1>The future of <em>premium</em> electronics</h1>\n    <p>Curated\
+      \ week</div>\n    <h1>The future of <em>premium</em> electronics and gadgets and gadgets</h1>\n    <p>Curated\
       \ tech for the discerning buyer. Find gear that elevates your life.</p>\n  \
       \  <div class=\"cta\">\n      <button class=\"btn-p\" onclick=\"sP('shop')\"\
       >Explore Products</button>\n      <button class=\"btn-s\" onclick=\"sP('orders')\"\
